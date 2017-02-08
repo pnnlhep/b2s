@@ -1,39 +1,20 @@
-#!/bin/bash -e
+#!/bin/bash
 
 PGSERVER=${PGSERVER:=127.0.0.1}
 PGPORT=${PGPORT:=5432}
+USER_NAME=${USER_NAME:=payara}
+USER_UID=${USER_UID:=1000}
+USER_GID=${USER_GID:=1000}
 
-. /opt/b2s/b2s_env
+B2S_INITIAL_MEM=${B2S_INITIAL_MEM:=8192}
+B2S_MAX_MEM=${B2S_MAX_MEM:=8192}
 
-if [ -x /srv/start/setup.sh ]
-then
-	. /srv/start/setup.sh
-fi
+echo PGSERVER=$PGSERVER > /etc/env
+echo PGPORT=$PGPORT >> /tmp/env
+echo B2S_INITIAL_MEM=${B2S_INITIAL_MEM}m >> /tmp/env
+echo B2S_MAX_MEM=${B2S_MAX_MEM}m >> /tmp/env
 
-cd /opt/b2s
+adduser --quiet --disabled-password --home /opt/payara41/ --shell /bin/bash --no-create-home --uid $USER_UID --gid $USER_GID $USER_NAME
 
-#FIXME set admin passwords.
-
-asadmin --passwordfile $GFPASSFILE --user admin --port $B2S_DAS_ADMIN_PORT start-domain b2s
-asadmin --passwordfile $GFPASSFILE --user admin --port $B2S_DAS_ADMIN_PORT start-local-instance b2sServer
-
-
-asadmin --passwordfile $GFPASSFILE --user admin --port $B2S_DAS_ADMIN_PORT set resources.jdbc-connection-pool.b2s_cp.property.ServerName=$PGSERVER
-asadmin --passwordfile $GFPASSFILE --user admin --port $B2S_DAS_ADMIN_PORT set resources.jdbc-connection-pool.b2s_cp.property.PortNumber=$PGPORT
-asadmin --passwordfile $GFPASSFILE --user admin --port $B2S_DAS_ADMIN_PORT set resources.jdbc-connection-pool.b2s_cp.property.Password=$(awk -F: '{if($4=="user_cond"){print $5}}' /opt/b2s/.pgpass) 2>/dev/null
-asadmin --passwordfile $GFPASSFILE --user admin --port $B2S_DAS_ADMIN_PORT set resources.jdbc-connection-pool.b2sAdm_cp.property.ServerName=$PGSERVER
-asadmin --passwordfile $GFPASSFILE --user admin --port $B2S_DAS_ADMIN_PORT set resources.jdbc-connection-pool.b2sAdm_cp.property.PortNumber=$PGPORT
-asadmin --passwordfile $GFPASSFILE --user admin --port $B2S_DAS_ADMIN_PORT set resources.jdbc-connection-pool.b2sAdm_cp.property.Password=$(awk -F: '{if($4=="user_cond"){print $5}}' /opt/b2s/.pgpass) 2>/dev/null
-asadmin --passwordfile $GFPASSFILE --user admin --port $B2S_DAS_ADMIN_PORT restart-domain b2s
-asadmin --passwordfile $GFPASSFILE --user admin --port $B2S_DAS_ADMIN_PORT restart-local-instance b2sServer
-
-asadmin --user admin --passwordfile $GFPASSFILE --port $B2S_DAS_ADMIN_PORT deploy --target b2sServer ./b2s.war
-
-#tail -f /opt/payara41/glassfish/domains/b2s/logs/server.log &
-tail -f /opt/payara41/glassfish/nodes/localhost-b2s/b2sServer/logs/server.log &
-
-#FIXME it would be nice to have a better way then this.
-while true; do
-	ps ax | grep java | grep -v grep > /dev/null || exit 0; 
-	sleep 5
-done
+find / -mount -user 1000 -exec chown $USER_UID.$USER_GID {} \; > /dev/null
+su -s /bin/bash - $USER_NAME /etc/start2.sh
