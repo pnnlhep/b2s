@@ -10,9 +10,9 @@ B2S_INITIAL_MEM=${B2S_INITIAL_MEM:=8192}
 B2S_MAX_MEM=${B2S_MAX_MEM:=8192}
 
 echo PGSERVER=$PGSERVER > /etc/env
-echo PGPORT=$PGPORT >> /tmp/env
-echo B2S_INITIAL_MEM=${B2S_INITIAL_MEM}m >> /tmp/env
-echo B2S_MAX_MEM=${B2S_MAX_MEM}m >> /tmp/env
+echo PGPORT=$PGPORT >> /etc/env
+echo B2S_INITIAL_MEM=-Xms${B2S_INITIAL_MEM}m >> /etc/env
+echo B2S_MAX_MEM=-Xmx${B2S_MAX_MEM}m >> /etc/env
 
 adduser --quiet --disabled-password --home /opt/payara41/ --shell /bin/bash --no-create-home --uid $USER_UID --gid $USER_GID $USER_NAME
 
