@@ -3,6 +3,7 @@
 . /opt/b2s/b2s_env
 
 . /etc/env
+[ -f /etc/env2 ] && . /etc/env2
 
 if [ -x /srv/start/setup.sh ]
 then
